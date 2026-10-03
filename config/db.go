@@ -13,10 +13,9 @@ import (
 func DbConnect()*mongo.Database{
 	godotenv.Load()
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
-	if (err){
+	if err != nil{
 		log.Fatal("Database connection has failed", err)
 	}
-	return (
-		client.Database(os.Getenv("DB_NAME"))
-	)
+	return client.Database(os.Getenv("DB_NAME"))
+	
 }

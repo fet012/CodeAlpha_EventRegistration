@@ -5,44 +5,39 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type LoginInput struct{
-	Email string `json:"email"`
+type LoginInput struct {
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type EventInput struct {
-    ID          primitive.ObjectID `json:"_id,omitempty"`
-    Name        string             `json:"name"`
-    Description string             `json:"description"`
-    Date        time.Time          `json:"date"`
-    Location    string             `json:"location"`
-    Capacity    int                `json:"capacity"`
-    Organizer   string             `json:"organizer"`
-    CreatedAt   time.Time          `json:"created_at"`
+func generateToken(email string) (string, error) {
+	godotenv.Load()
+	claims := jwt.MapClaims{
+		"email": email,
+		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
-func login(c *gin.Context){
+
+func Login(c *gin.Context) {
 	godotenv.Load()
 	var input LoginInput
 	c.ShouldBindJSON(&input)
 
-	if input.Email == os.Getenv("ADMIN_EMAIL") && input.Password == os.Getenv("ADMIN_PASSWORD"){
-		token, _ := generateToken(input.Email)
+	if input.Email == os.Getenv("ADMIN_EMAIL") && input.Password == os.Getenv("ADMIN_PASSWORD") {
+		token, err := generateToken(input.Email)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Could not generate token"})
+			return
+		}
 		c.JSON(200, gin.H{"token": token})
 		return
 	}
+
 	c.JSON(401, gin.H{"error": "Invalid credentials"})
-}
-
-func CreateEvent(c *gin.Context){
-	var input EventInput
-	c.ShouldBindJSON((&input))
-
-	c.JSON(201, gin.H{EventInput})
-
-
-	
 }
