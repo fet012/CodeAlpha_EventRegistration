@@ -51,17 +51,6 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 }
 
 func (h *EventHandler) ListEvents(c *gin.Context) {
-	  if h.DB == nil {
-        c.JSON(500, gin.H{"error": "DB is nil"})
-        return
-    }
-	name := h.DB.Name()
-    if name == "" {
-        c.JSON(500, gin.H{"error": "DB name is empty — DB_NAME env var missing"})
-        return
-    }
-    c.JSON(500, gin.H{"error": "DB is fine, name=" + name})
-    return
 	pipeline := mongo.Pipeline{
 		{{Key: "$lookup", Value: bson.M{
 			"from":         "registrations",
