@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gatherly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14110F; --paper:#F4EDE2; --clay:#B3542A;
+    --moss:#3F4A2E; --brass:#C9A227; --line:#D9CFBE;
+    --muted:#6B6259;
+    --radius:2px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font-family:"Instrument Sans",system-ui,sans-serif;font-size:16px;line-height:1.5}
+  body{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.07 0 0 0 0 0.06 0 0 0 0.35 0'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  .display{font-family:"Fraunces",serif;font-weight:600;letter-spacing:-0.01em}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:28px 32px;border-bottom:1px solid var(--line);
+  }
+  header.top h1{margin:0;font-size:28px}
+  header.top nav a{
+    color:var(--ink);text-decoration:none;margin-left:20px;font-size:14px;
+    border-bottom:1px solid transparent;padding-bottom:2px;
+  }
+  header.top nav a:hover, header.top nav a:focus-visible{border-bottom-color:var(--clay);outline:none}
+
+  main{max-width:920px;margin:0 auto;padding:32px}
+
+  .page-intro{margin:16px 0 32px}
+  .page-intro p{color:var(--muted);margin:8px 0 0}
+
+  ul.events{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:16px}
+  li.ticket{
+    display:grid;grid-template-columns:1fr 220px;
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    position:relative;cursor:pointer;transition:border-color .15s ease;
+  }
+  li.ticket:hover, li.ticket:focus-visible{border-color:var(--ink);outline:none}
+  li.ticket .stub{padding:22px 24px}
+  li.ticket .side{
+    padding:22px 24px;border-left:1px dashed var(--line);
+    display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+    background:linear-gradient(0deg, rgba(20,17,15,0.02), rgba(20,17,15,0.02));
+  }
+  li.ticket::before, li.ticket::after{
+    content:"";position:absolute;width:14px;height:14px;border-radius:50%;
+    background:var(--paper);border:1px solid var(--line);
+    right:213px;top:-7px;
+  }
+  li.ticket::after{top:auto;bottom:-7px}
+
+  .event-name{margin:0 0 6px;font-size:22px}
+  .event-desc{color:var(--muted);font-size:14px;margin:0 0 10px;max-width:60ch}
+  .event-meta{color:var(--muted);font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+  .event-org{margin-top:10px;font-size:13px;color:var(--moss);letter-spacing:0.02em;text-transform:uppercase}
+
+  .date-badge{font-size:13px;color:var(--muted)}
+  .date-badge strong{display:block;font-size:18px;color:var(--ink);font-family:"Fraunces",serif}
+
+  .capacity{font-size:13px;color:var(--muted)}
+  .meter{
+    height:8px;background:var(--line);border-radius:0;margin-top:6px;overflow:hidden;
+    -webkit-mask-image:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 7px);
+            mask-image:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 7px);
+  }
+  .meter > i{display:block;height:100%;background:var(--clay)}
+  .meter.warn > i{background:var(--brass)}
+  .meter.full > i{background:var(--moss)}
+
+  button, .btn{
+    font:inherit;border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+    padding:10px 16px;border-radius:var(--radius);cursor:pointer;
+    transition:background .15s ease,color .15s ease;
+  }
+  button:hover, .btn:hover{background:var(--clay);border-color:var(--clay)}
+  button:focus-visible, .btn:focus-visible{outline:2px solid var(--clay);outline-offset:2px}
+  button.ghost{background:transparent;color:var(--ink)}
+  button.ghost:hover{background:var(--ink);color:var(--paper)}
+  button[disabled]{opacity:.5;cursor:not-allowed}
+
+  dialog{
+    border:1px solid var(--line);border-radius:var(--radius);padding:0;
+    background:var(--paper);color:var(--ink);max-width:440px;width:calc(100% - 32px);
+  }
+  dialog::backdrop{background:rgba(20,17,15,0.45)}
+  .modal-body{padding:28px}
+  .modal-body h2{margin:0 0 4px;font-size:24px}
+  .modal-body .sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 4px}
+  input, select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+    background:#FBF7EF;font:inherit;color:var(--ink);
+  }
+  input:focus, select:focus{outline:none;border-color:var(--clay)}
+  .row{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+
+  .notice{padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--clay);
+    font-size:14px;margin-top:14px;background:#FBF7EF}
+  .notice.error{border-left-color:#8C2E1E;color:#5A1E12}
+  .notice.ok{border-left-color:var(--moss);color:var(--moss)}
+
+  .skeleton{background:linear-gradient(90deg,var(--line) 0 40%,#E7DDCB 40% 60%,var(--line) 60%);
+    background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:var(--radius);color:transparent}
+  @keyframes sh{from{background-position:100% 0}to{background-position:-100% 0}}
+  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin:24px 0}
+  .tabs button{background:transparent;color:var(--muted);border:none;border-bottom:2px solid transparent;
+    padding:10px 16px;border-radius:0}
+  .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--clay)}
+  .tabs button:hover{color:var(--ink);background:transparent}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-family:"JetBrains Mono",monospace;font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase}
+
+  @media (max-width:680px){
+    header.top{padding:20px;flex-wrap:wrap;gap:10px}
+    main{padding:20px}
+    li.ticket{grid-template-columns:1fr}
+    li.ticket .side{border-left:none;border-top:1px dashed var(--line)}
+    li.ticket::before, li.ticket::after{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="display">Gatherly</h1>
+  <nav>
+    <a href="#/">Events</a>
+    <a href="#/admin">Organizer</a>
+  </nav>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<!-- Register modal -->
+<dialog id="register-modal" aria-labelledby="reg-title">
+  <form method="dialog" class="modal-body" id="register-form">
+    <h2 id="reg-title" class="display">Register</h2>
+    <p class="sub" id="reg-sub"></p>
+
+    <label for="reg-name">Name</label>
+    <input id="reg-name" name="name" required autocomplete="name" />
+
+    <label for="reg-email">Email</label>
+    <input id="reg-email" name="email" type="email" required autocomplete="email" />
+
+    <div id="reg-notice" hidden></div>
+
+    <div class="row">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button type="submit" id="reg-submit">Confirm registration</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Create event modal -->
+<dialog id="create-modal" aria-labelledby="create-title">
+  <form method="dialog" class="modal-body" id="create-form">
+    <h2 id="create-title" class="display">Create event</h2>
+    <p class="sub">It will appear on the public events list immediately.</p>
+
+    <label for="ev-name">Name</label>
+    <input id="ev-name" name="name" required />
+
+    <label for="ev-desc">Description</label>
+    <input id="ev-desc" name="description" />
+
+    <label for="ev-date">Date &amp; time</label>
+    <input id="ev-date" name="date" type="datetime-local" required />
+
+    <label for="ev-loc">Location</label>
+    <input id="ev-loc" name="location" required />
+
+    <label for="ev-cap">Capacity</label>
+    <input id="ev-cap" name="capacity" type="number" min="1" required />
+
+    <label for="ev-org">Organizer</label>
+    <input id="ev-org" name="organizer" required />
+
+    <div id="create-notice" hidden></div>
+
+    <div class="row">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button type="submit" id="create-submit">Create event</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ---------- Config & helpers ---------- */
+
+// Same origin: Render serves both API and this file from the same host,
+// so relative paths work and no CORS config is needed on the Go side.
+const API = "";
+const TOKEN_KEY = "gatherly.jwt";
+
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, props={}, ...kids) => {
+  const n = Object.assign(document.createElement(tag), props);
+  for (const k of kids) n.append(k?.nodeType ? k : document.createTextNode(k ?? ""));
+  return n;
+};
+
+const auth = () => localStorage.getItem(TOKEN_KEY);
+
+async function api(path, opts={}) {
+  const headers = { "Content-Type":"application/json", ...(opts.headers||{}) };
+  const t = auth();
+  if (t) headers.Authorization = `Bearer ${t}`;
+
+  const res = await fetch(API + path, { ...opts, headers });
+  const text = await res.text();
+  let body;
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+
+  if (!res.ok) {
+    // Your Go handlers return {"error": "..."} — read that, not .message
+    throw Object.assign(new Error(body?.error || res.statusText), { status: res.status, body });
+  }
+  return body;
+}
+
+const fmtDate = iso => {
+  const d = new Date(iso);
+  return {
+    day: d.toLocaleDateString(undefined,{day:"2-digit"}),
+    month: d.toLocaleDateString(undefined,{month:"short"}).toUpperCase(),
+    full: d.toLocaleString(undefined,{dateStyle:"medium", timeStyle:"short"})
+  };
+};
+
+// Reusable load/skeleton/error pattern.
+async function withState(panel, loadingText, load) {
+  panel.replaceChildren(el("div",{className:"notice"}, loadingText));
+  try {
+    panel.replaceChildren(await load());
+  } catch (err) {
+    if (err.status === 401) { localStorage.removeItem(TOKEN_KEY); location.hash="#/admin"; return; }
+    panel.replaceChildren(el("div",{className:"notice error"}, err.message || "Something went wrong."));
+  }
+}
+
+/* ---------- Public events ---------- */
+
+async function renderEvents() {
+  const app = $("#app");
+  app.replaceChildren(
+    el("section",{className:"page-intro"},
+      el("h2",{className:"display"}, "Upcoming events"),
+      el("p",{}, "Browse and register in seconds. You only need a name and email.")
+    )
+  );
+
+  const list = el("ul",{className:"events"});
+  app.append(list);
+
+  // Skeletons
+  for (let i=0;i<3;i++){
+    const sk = el("li",{className:"ticket"},
+      el("div",{className:"stub"},
+        el("div",{className:"skeleton",style:"height:22px;width:60%"}),
+        el("div",{className:"skeleton",style:"height:14px;width:40%;margin-top:10px"})
+      ),
+      el("div",{className:"side"},
+        el("div",{className:"skeleton",style:"height:14px;width:60%"}),
+        el("div",{className:"skeleton",style:"height:8px;width:100%;margin-top:10px"})
+      )
+    );
+    sk.setAttribute("aria-hidden","true");
+    list.append(sk);
+  }
+
+  try {
+    // Envelope: { events: [...] }
+    const { events } = await api("/events");
+    list.replaceChildren();
+
+    if (!events?.length) {
+      list.append(el("li",{className:"notice"}, "No events are listed yet. Check back soon."));
+      return;
+    }
+    for (const ev of events) list.append(ticket(ev));
+  } catch (err) {
+    list.replaceChildren(el("li",{className:"notice error"},
+      `Couldn't load events. ${err.message || ""}`));
+    const retry = el("button",{className:"ghost",onclick:renderEvents}, "Try again");
+    list.append(el("li",{}, retry));
+  }
+}
+
+function ticket(ev) {
+  // Mongo returns _id, not id.
+  const id = ev._id ?? ev.id;
+
+  // ListEvents currently returns the raw event doc — no registration_count.
+  // Falls back to 0 until you add the $lookup described below.
+  const taken = Number(ev.registration_count ?? ev.registrationCount ?? 0);
+  const capacity = Number(ev.capacity ?? 0);
+  const remaining = Math.max(0, capacity - taken);
+  const pct = capacity ? Math.min(100, Math.round((taken / capacity) * 100)) : 0;
+  const meterClass = remaining === 0 ? "meter full" : pct >= 80 ? "meter warn" : "meter";
+  const d = fmtDate(ev.date);
+
+  const card = el("li", {
+    className: "ticket", tabIndex: 0, role: "button",
+    "aria-label": `Register for ${ev.name}`
+  });
+
+  card.append(
+    el("div",{className:"stub"},
+      el("h3",{className:"display event-name"}, ev.name),
+      ev.description ? el("p",{className:"event-desc"}, ev.description) : "",
+      el("div",{className:"event-meta"},
+        el("span",{}, ev.location || "Location TBA"),
+        el("span",{}, d.full)
+      ),
+      ev.organizer ? el("div",{className:"event-org"}, "Hosted by ", ev.organizer) : ""
+    ),
+    el("div",{className:"side"},
+      el("div",{className:"date-badge"},
+        el("strong",{}, `${d.day} ${d.month}`),
+        el("span",{}, new Date(ev.date).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}))
+      ),
+      el("div",{className:"capacity"},
+        el("div",{className:"mono"},
+          remaining === 0 ? "Sold out" : `${remaining} of ${capacity} left`),
+        el("div",{className:meterClass, "aria-hidden":"true"},
+          el("i",{style:`width:${pct}%`})
+        )
+      )
+    )
+  );
+
+  const open = () => openRegister({ ...ev, _id: id });
+  card.addEventListener("click", open);
+  card.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+  });
+  return card;
+}
+
+/* ---------- Register modal ---------- */
+
+function openRegister(ev) {
+  const dlg = $("#register-modal");
+  const form = $("#register-form");
+  const notice = $("#reg-notice");
+
+  notice.hidden = true; notice.className = ""; notice.textContent = "";
+  form.reset();
+  $("#reg-sub").textContent = `${ev.name} — ${fmtDate(ev.date).full}`;
+  form.dataset.eventId = ev._id;
+  dlg.showModal();
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = $("#reg-submit");
+    btn.disabled = true; btn.textContent = "Registering…";
+    notice.hidden = true;
+
+    try {
+      await api(`/events/${form.dataset.eventId}/register`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: $("#reg-name").value.trim(),
+          email: $("#reg-email").value.trim()
+        })
+      });
+      notice.className = "notice ok";
+      notice.textContent = "You're registered. A confirmation is on its way.";
+      notice.hidden = false;
+      btn.textContent = "Done";
+      setTimeout(() => dlg.close(), 1400);
+    } catch (err) {
+      // Your Go handler returns 400 with a plain English message for both
+      // "Event is full" and "You are already registered for this event".
+      const msg = err.message || "Something went wrong. Please try again.";
+      notice.className = "notice error";
+      notice.textContent = msg;
+      notice.hidden = false;
+      btn.disabled = false; btn.textContent = "Confirm registration";
+    }
+  };
+}
+
+/* ---------- Admin ---------- */
+
+function renderLogin() {
+  const app = $("#app");
+  const form = el("form", {
+    className:"modal-body",
+    style:"border:1px solid var(--line);max-width:420px;margin:40px auto"
+  },
+    el("h2",{className:"display"}, "Organizer sign in"),
+    el("p",{className:"sub"}, "Access the dashboard to create events and view registrations."),
+
+    el("label",{htmlFor:"lg-email"}, "Email"),
+    el("input",{id:"lg-email",type:"email",required:true,autocomplete:"email"}),
+
+    el("label",{htmlFor:"lg-pass"}, "Password"),
+    el("input",{id:"lg-pass",type:"password",required:true,autocomplete:"current-password"}),
+
+    el("div",{id:"lg-notice",className:"notice error",hidden:true}),
+
+    el("div",{className:"row"},
+      el("button",{type:"submit"}, "Sign in"))
+  );
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const notice = $("#lg-notice", form);
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true; btn.textContent = "Signing in…"; notice.hidden = true;
+
+    try {
+      const { token } = await api("/admin/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: $("#lg-email", form).value,
+          password: $("#lg-pass", form).value
+        })
+      });
+      if (!token) throw new Error("No token returned.");
+      localStorage.setItem(TOKEN_KEY, token);
+      location.hash = "#/admin";
+      route();
+    } catch (err) {
+      notice.textContent = err.status === 401
+        ? "Invalid email or password."
+        : (err.message || "Sign in failed.");
+      notice.hidden = false;
+      btn.disabled = false; btn.textContent = "Sign in";
+    }
+  };
+
+  app.replaceChildren(form);
+}
+
+function renderDashboard() {
+  const app = $("#app");
+  app.replaceChildren(
+    el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-top:8px"},
+      el("h2",{className:"display",style:"margin:0"}, "Dashboard"),
+      el("button",{className:"ghost",onclick:()=>{
+        localStorage.removeItem(TOKEN_KEY);
+        location.hash = "#/admin";
+        route();
+      }}, "Sign out")
+    )
+  );
+
+  const tabs = el("div",{className:"tabs",role:"tablist"});
+  const tabEvents = el("button",{role:"tab","aria-selected":"true"}, "Events");
+  const tabRegs   = el("button",{role:"tab","aria-selected":"false"}, "Registrations");
+  tabs.append(tabEvents, tabRegs);
+
+  const panel = el("section");
+  app.append(tabs, panel);
+
+  tabEvents.onclick = () => {
+    tabEvents.setAttribute("aria-selected","true");
+    tabRegs.setAttribute("aria-selected","false");
+    renderEventsTab(panel);
+  };
+  tabRegs.onclick = () => {
+    tabEvents.setAttribute("aria-selected","false");
+    tabRegs.setAttribute("aria-selected","true");
+    renderRegsTab(panel);
+  };
+  tabEvents.onclick();
+}
+
+async function renderEventsTab(panel) {
+  await withState(panel, "Loading events…", async () => {
+    const { events } = await api("/events");
+    const wrap = el("div");
+
+    wrap.append(
+      el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"},
+        el("p",{style:"color:var(--muted);margin:0"},
+          `${events.length} event${events.length===1?"":"s"}`),
+        el("button",{onclick: openCreateEvent}, "Create event")
+      )
+    );
+
+    if (!events.length) {
+      wrap.append(el("div",{className:"notice"}, "No events yet. Create your first one."));
+      return wrap;
+    }
+
+    wrap.append(
+      el("table",
+        el("thead",{}, el("tr",{},
+          el("th",{}, "Event"), el("th",{}, "Date"), el("th",{}, "Location"),
+          el("th",{}, "Capacity"), el("th",{}, "Registered"))),
+        el("tbody",{}, ...events.map(ev => el("tr",{},
+          el("td",{}, ev.name),
+          el("td",{className:"mono"}, new Date(ev.date).toLocaleDateString()),
+          el("td",{}, ev.location || "—"),
+          el("td",{className:"mono"}, String(ev.capacity ?? "—")),
+          el("td",{className:"mono"}, String(ev.registration_count ?? 0))
+        )))
+      )
+    );
+    return wrap;
+  });
+}
+
+function openCreateEvent() {
+  const dlg = $("#create-modal");
+  const form = $("#create-form");
+  const notice = $("#create-notice");
+
+  notice.hidden = true; notice.className = ""; notice.textContent = "";
+  form.reset();
+  dlg.showModal();
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = $("#create-submit");
+    btn.disabled = true; btn.textContent = "Creating…"; notice.hidden = true;
+
+    try {
+      await api("/events", {
+        method: "POST",
+        body: JSON.stringify({
+          name:        $("#ev-name", form).value.trim(),
+          description: $("#ev-desc", form).value.trim(),
+          date:        new Date($("#ev-date", form).value).toISOString(),
+          location:    $("#ev-loc", form).value.trim(),
+          capacity:    Number($("#ev-cap", form).value),
+          organizer:   $("#ev-org", form).value.trim()
+        })
+      });
+      dlg.close();
+      // Refresh whichever admin tab is visible.
+      const panel = $("#app section");
+      const eventsTabActive = $('.tabs [role=tab][aria-selected="true"]')?.textContent === "Events";
+      eventsTabActive ? renderEventsTab(panel) : renderRegsTab(panel);
+    } catch (err) {
+      notice.className = "notice error";
+      notice.textContent = err.message || "Couldn't create event.";
+      notice.hidden = false;
+      btn.disabled = false; btn.textContent = "Create event";
+    }
+  };
+}
+
+async function renderRegsTab(panel) {
+  await withState(panel, "Loading events…", async () => {
+    const { events } = await api("/events");
+    if (!events.length) {
+      return el("div",{className:"notice"}, "No events to show registrations for.");
+    }
+
+    const select = el("select",
+      {style:"min-width:240px"},
+      ...events.map(ev => el("option",{value: ev._id}, ev.name))
+    );
+
+    const out = el("div",{style:"margin-top:20px"});
+
+    const load = async () => {
+      await withState(out, "Loading registrations…", async () => {
+        const { registrations } = await api(`/events/${select.value}/registrations`);
+        if (!registrations?.length) {
+          return el("div",{className:"notice"}, "No registrations yet.");
+        }
+        return el("table",
+          el("thead",{}, el("tr",{},
+            el("th",{}, "Name"), el("th",{}, "Email"), el("th",{}, "When"))),
+          el("tbody",{}, ...registrations.map(r => el("tr",{},
+            el("td",{}, r.name),
+            el("td",{}, r.email),
+            el("td",{className:"mono"},
+              r.registered_at ? new Date(r.registered_at).toLocaleString() : "—")
+          )))
+        );
+      });
+    };
+
+    select.onchange = load;
+
+    const wrap = el("div");
+    wrap.append(
+      el("div",{style:"display:flex;gap:12px;align-items:center;flex-wrap:wrap"},
+        el("label",{style:"margin:0;color:var(--muted);font-size:13px"}, "Event"),
+        select),
+      out
+    );
+    load();
+    return wrap;
+  });
+}
+
+/* ---------- Router ---------- */
+
+function route() {
+  const hash = location.hash || "#/";
+  if (hash.startsWith("#/admin")) {
+    auth() ? renderDashboard() : renderLogin();
+  } else {
+    renderEvents();
+  }
+}
+
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
