@@ -51,7 +51,20 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 }
 
 func (h *EventHandler) ListEvents(c *gin.Context) {
-	cursor, err := h.DB.Collection("events").Find(context.TODO(), bson.M{})
+	pipeline := mongo.Pipeline{
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "registrations",
+			"localField":   "_id",
+			"foreignField": "event_id",
+			"as":           "regs",
+		}}},
+		{{Key: "$addFields", Value: bson.M{
+			"registration_count": bson.M{"$size": "$regs"},
+		}}},
+		{{Key: "$project", Value: bson.M{"regs": 0}}},
+	}
+
+	cursor, err := h.DB.Collection("events").Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Could not fetch events"})
 		return

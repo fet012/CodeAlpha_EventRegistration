@@ -12,8 +12,11 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	eventHandler := &handlers.EventHandler{DB: db}
 	registrationHandler := &handlers.RegistrationHandler{DB: db}
 
+	r.StaticFile("/", "./index.html")
+
 	// public routes
 	r.POST("/admin/login", handlers.Login)
+	r.GET("/events", eventHandler.ListEvents)            
 	r.GET("/events/:id", eventHandler.GetEvent)
 	r.POST("/events/:id/register", registrationHandler.RegisterForEvent)
 
@@ -22,7 +25,6 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	admin.Use(middleware.AuthMiddleware())
 	{
 		admin.POST("/events", eventHandler.CreateEvent)
-		admin.GET("/events", eventHandler.ListEvents)
 		admin.GET("/events/:id/registrations", registrationHandler.GetRegistrations)
 	}
 }

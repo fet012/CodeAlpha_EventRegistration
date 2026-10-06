@@ -36,7 +36,18 @@ func (h *RegistrationHandler) RegisterForEvent(c *gin.Context) {
 
 	// check capacity
 	registrationCount, _ := h.DB.Collection("registrations").CountDocuments(context.TODO(), bson.M{"event_id": eventID})
-	capacity := int64(event["capacity"].(int32))
+	var capacity int64
+switch v := event["capacity"].(type) {
+case int32:
+	capacity = int64(v)
+case int64:
+	capacity = v
+case float64:
+	capacity = int64(v)
+default:
+	c.JSON(500, gin.H{"error": "Event capacity is malformed"})
+	return
+}
 	if registrationCount >= capacity {
 		c.JSON(400, gin.H{"error": "Event is full"})
 		return
