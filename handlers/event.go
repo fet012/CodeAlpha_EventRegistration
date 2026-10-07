@@ -71,13 +71,12 @@ func (h *EventHandler) ListEvents(c *gin.Context) {
 	}
 	defer cursor.Close(context.TODO())
 
-	var events []bson.M
-	if err := cursor.All(context.TODO(), &events); err != nil {
-		c.JSON(500, gin.H{"error": "Could not parse events"})
-		return
-	}
-
-	c.JSON(200, gin.H{"events": events})
+	events := []bson.M{}
+if err := cursor.All(context.TODO(), &events); err != nil {
+    c.JSON(500, gin.H{"error": "Could not parse events"})
+    return
+}
+c.JSON(200, gin.H{"events": events})
 }
 
 func (h *EventHandler) GetEvent(c *gin.Context) {

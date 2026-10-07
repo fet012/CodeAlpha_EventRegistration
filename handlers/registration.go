@@ -101,7 +101,7 @@ func (h *RegistrationHandler) GetRegistrations(c *gin.Context) {
 	}
 	defer cursor.Close(context.TODO())
 
-	var registrations []bson.M
+	registrations := []bson.M{}
 	if err := cursor.All(context.TODO(), &registrations); err != nil {
 		c.JSON(500, gin.H{"error": "Could not parse registrations"})
 		return
