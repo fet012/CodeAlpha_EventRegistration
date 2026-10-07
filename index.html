@@ -1152,6 +1152,12 @@
       }
 
       window.addEventListener("hashchange", route);
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-close]");
+        if (!btn) return;
+        const dlg = btn.closest("dialog");
+        if (dlg) dlg.close();
+      });
       route();
     </script>
   </body>
